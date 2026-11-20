@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Torre das Provações — Grimório Digital</title>
+    <!-- Tailwind CSS -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        grimoire: {
+                            bg: 'var(--background)',
+                            card: 'var(--surface)',
+                            cardHover: 'var(--surface-secondary)',
+                            border: 'var(--surface-secondary)',
+                            gold: 'var(--primary)',
+                            goldLight: 'var(--primary-light)',
+                            redDark: 'var(--accent)',
+                            redGlow: 'var(--accent)',
+                            text: 'var(--text-primary)',
+                            muted: 'var(--text-secondary)'
+                        }
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --background: #0D090B;
+            --surface: #1A1015;
+            --surface-secondary: #2B1920;
+
+            --primary: #B91C1C;
+            --primary-light: #F87171;
+
+            --accent: #7F1D1D;
+
+            --text-primary: #F5E7E7;
+            --text-secondary: #A89AA0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            background-image: radial-gradient(circle at 50% 50%,
+                    var(--surface) 0%,
+                    var(--background) 100%);
+            min-height: 100vh;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--surface-secondary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        .grimoire-border {
+            border: 1px solid var(--surface-secondary);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+        }
+
+        .grimoire-gold-border {
+            border: 1px solid rgba(185, 28, 28, 0.35);
+            box-shadow: 0 0 15px rgba(185, 28, 28, 0.12);
+        }
+
+        .grimoire-gold-border:hover {
+            border-color: rgba(248, 113, 113, 0.65);
+            box-shadow: 0 0 20px rgba(185, 28, 28, 0.25);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Custom Modal for Notifications / Confirmations -->
+    <div id="custom-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div
+            class="bg-grimoire-card grimoire-gold-border rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-fade-in">
+            <h3 id="modal-title" class="text-xl font-cinzel font-bold text-grimoire-gold mb-3">Aviso da Torre</h3>
+            <p id="modal-message" class="text-grimoire-muted mb-6 text-sm leading-relaxed"></p>
+            <div id="modal-buttons" class="flex justify-end gap-3">
+                <button id="modal-btn-cancel" onclick="closeModal()"
+                    class="px-4 py-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg text-sm transition">Cancelar</button>
+                <button id="modal-btn-confirm"
+                    class="px-4 py-2 bg-grimoire-redDark hover:bg-red-800 text-white rounded-lg text-sm font-semibold transition">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Schema Modal -->
+    <div id="sql-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div
+            class="bg-grimoire-card grimoire-gold-border rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl animate-fade-in max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-cinzel font-bold text-grimoire-gold"><i
+                        class="fa-solid fa-database mr-2"></i>Esquema do Banco de Dados (SQL)</h3>
+                <button onclick="toggleSqlModal()" class="text-grimoire-muted hover:text-white"><i
+                        class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <p class="text-xs text-grimoire-muted mb-3">Estrutura relacional recomendada em PostgreSQL / Supabase para
+                persistência completa do RPG A Torre das Provações:</p>
+            <div
+                class="bg-grimoire-bg p-4 rounded-lg overflow-y-auto flex-1 font-mono text-xs text-grimoire-gold border border-grimoire-border">
+                <pre><code>-- Criação da tabela de Personagens
+CREATE TABLE characters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    name VARCHAR(100) NOT NULL,
+    title VARCHAR(100),
+    player VARCHAR(100),
+    age INT,
+    gender VARCHAR(50),
+    appearance TEXT,
+    personality TEXT,
+    history TEXT,
+    objectives TEXT,
+    image_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de Atributos e Status
+CREATE TABLE character_attributes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
+    physical INT DEFAULT 10,
+    emotion INT DEFAULT 10,
+    mind INT DEFAULT 10,
+    hp_current INT DEFAULT 20,
+    hp_max INT DEFAULT 20,
+    armor_class INT DEFAULT 10,
+    dodge_manual BOOLEAN DEFAULT FALSE,
+    dodge_val INT DEFAULT 10,
+    perception_manual BOOLEAN DEFAULT FALSE,
+    perception_val INT DEFAULT 10,
+    intuition_manual BOOLEAN DEFAULT FALSE,
+    intuition_val INT DEFAULT 10
+);
+
+-- Tabela de Campos Personalizados do Personagem
+CREATE TABLE custom_fields (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
+    field_name VARCHAR(100),
+    field_type VARCHAR(50),
+    field_value TEXT,
+    category VARCHAR(100) DEFAULT 'Geral'
+);
+
+-- Tabela de Origens
+CREATE TABLE character_origins (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
+    origin_name VARCHAR(100),
+    description TEXT,
+    experience_desc TEXT,
+    bonus_value VARCHAR(50) DEFAULT '+2',
+    is_custom BOOLEAN DEFAULT FALSE
+);
+
+-- Tabela de Habilidades
+CREATE TABLE abilities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(100) DEFAULT 'Geral',
+    description TEXT,
+    proficiency VARCHAR(50),
+    effects TEXT,
+    requirements TEXT,
+    cost VARCHAR(50),
+    cooldown VARCHAR(50),
+    notes TEXT,
+    icon VARCHAR(50)
+);
+
+-- Tabela de Anotações
+CREATE TABLE notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
+    category VARCHAR(100) DEFAULT 'Geral',
+    title VARCHAR(150),
+    content TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);</code></pre>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="copySqlCode()"
+                    class="px-4 py-2 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold rounded-lg text-sm transition">
+                    <i class="fa-solid fa-copy mr-2"></i>Copiar SQL
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Bar / Header -->
+    <header class="bg-grimoire-card border-b border-grimoire-border sticky top-0 z-40 px-4 py-3 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-lg bg-gradient-to-br from-grimoire-gold to-grimoire-redDark flex items-center justify-center text-white font-bold shadow-lg">
+                    <i class="fa-solid fa-tower-observation text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-cinzel font-bold text-grimoire-gold tracking-wider">A TORRE DAS PROVAÇÕES
+                    </h1>
+                    <p class="text-xs text-grimoire-muted">Grimório Digital de Personagens</p>
+                </div>
+            </div>
+
+            <!-- Character Selector & Quick Actions -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5">
+                    <span class="text-xs text-grimoire-muted mr-2 font-cinzel">Ficha:</span>
+                    <select id="character-select" onchange="switchCharacter(this.value)"
+                        class="bg-transparent text-grimoire-text font-semibold text-sm focus:outline-none cursor-pointer">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <button onclick="openNewCharacterModal()" title="Nova Ficha"
+                    class="p-2 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-grimoire-text rounded-lg transition text-sm">
+                    <i class="fa-solid fa-plus mr-1"></i> Nova
+                </button>
+                <button onclick="duplicateCurrentCharacter()" title="Duplicar Ficha"
+                    class="p-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg transition text-sm">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+                <button onclick="confirmDeleteCharacter()" title="Excluir Ficha"
+                    class="p-2 bg-grimoire-border hover:bg-grimoire-redDark text-grimoire-text rounded-lg transition text-sm">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+                <button onclick="exportDataJSON()" title="Exportar JSON"
+                    class="p-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg transition text-sm">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <label title="Importar JSON"
+                    class="p-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg transition text-sm cursor-pointer">
+                    <i class="fa-solid fa-upload"></i>
+                    <input type="file" id="import-file" accept=".json" onchange="importDataJSON(event)" class="hidden">
+                </label>
+                <button onclick="toggleSqlModal()" title="Ver Esquema SQL"
+                    class="p-2 bg-grimoire-border hover:bg-grimoire-redDark text-grimoire-gold rounded-lg transition text-sm">
+                    <i class="fa-solid fa-database"></i> SQL
+                </button>
+                <button onclick="window.print()" title="Imprimir / Exportar PDF"
+                    class="p-2 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold rounded-lg transition text-sm">
+                    <i class="fa-solid fa-file-pdf mr-1"></i> PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="bg-grimoire-card/60 border-b border-grimoire-border px-4 py-2">
+        <div class="max-w-7xl mx-auto flex overflow-x-auto gap-2 no-scrollbar">
+            <button onclick="switchTab('personagem')" id="tab-btn-personagem"
+                class="tab-btn px-4 py-2 rounded-lg font-cinzel text-sm font-semibold transition bg-grimoire-gold text-black shadow-md flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-user"></i> Personagem
+            </button>
+            <button onclick="switchTab('atributos')" id="tab-btn-atributos"
+                class="tab-btn px-4 py-2 rounded-lg font-cinzel text-sm font-semibold transition text-grimoire-muted hover:text-white hover:bg-grimoire-border flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-dice"></i> Atributos & Status
+            </button>
+            <button onclick="switchTab('origem')" id="tab-btn-origem"
+                class="tab-btn px-4 py-2 rounded-lg font-cinzel text-sm font-semibold transition text-grimoire-muted hover:text-white hover:bg-grimoire-border flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-book-atlas"></i> Origem
+            </button>
+            <button onclick="switchTab('habilidades')" id="tab-btn-habilidades"
+                class="tab-btn px-4 py-2 rounded-lg font-cinzel text-sm font-semibold transition text-grimoire-muted hover:text-white hover:bg-grimoire-border flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-wand-sparkles"></i> Habilidades
+            </button>
+            <button onclick="switchTab('anotacoes')" id="tab-btn-anotacoes"
+                class="tab-btn px-4 py-2 rounded-lg font-cinzel text-sm font-semibold transition text-grimoire-muted hover:text-white hover:bg-grimoire-border flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-feather"></i> Anotações
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- TAB 1: PERSONAGEM -->
+        <section id="tab-personagem" class="tab-content animate-fade-in space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column: Image & Quick Bio -->
+                <div class="space-y-6">
+                    <div class="bg-grimoire-card grimoire-border rounded-xl p-5 text-center relative">
+                        <div
+                            class="relative w-40 h-40 mx-auto mb-4 rounded-xl overflow-hidden grimoire-gold-border bg-grimoire-bg flex items-center justify-center">
+                            <img id="char-img-preview" src="https://placehold.co/200x200/12141c/c5a059?text=Sem+Foto"
+                                alt="Retrato" class="w-full h-full object-cover"
+                                onerror="this.src='https://placehold.co/200x200/12141c/c5a059?text=Erro+Img'">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-xs text-grimoire-muted font-cinzel">URL da Imagem do
+                                Personagem</label>
+                            <input type="text" id="char-image" oninput="updateCharacterField('image', this.value)"
+                                class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                                placeholder="https://exemplo.com/foto.jpg">
+                        </div>
+                    </div>
+
+                    <div class="bg-grimoire-card grimoire-border rounded-xl p-5 space-y-4">
+                        <h3
+                            class="text-base font-cinzel font-bold text-grimoire-gold border-b border-grimoire-border pb-2">
+                            <i class="fa-solid fa-id-card mr-2"></i>Dados Básicos</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-grimoire-muted">Nome do Personagem</label>
+                                <input type="text" id="char-name" oninput="updateCharacterField('name', this.value)"
+                                    class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-grimoire-muted">Título ou Apelido</label>
+                                <input type="text" id="char-title" oninput="updateCharacterField('title', this.value)"
+                                    class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs text-grimoire-muted">Jogador</label>
+                                    <input type="text" id="char-player"
+                                        oninput="updateCharacterField('player', this.value)"
+                                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-grimoire-muted">Idade</label>
+                                    <input type="number" id="char-age" oninput="updateCharacterField('age', this.value)"
+                                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-grimoire-muted">Gênero</label>
+                                <input type="text" id="char-gender" oninput="updateCharacterField('gender', this.value)"
+                                    class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Narrative Details & Custom Fields -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-grimoire-card grimoire-border rounded-xl p-5 space-y-4">
+                        <h3
+                            class="text-base font-cinzel font-bold text-grimoire-gold border-b border-grimoire-border pb-2">
+                            <i class="fa-solid fa-scroll mr-2"></i>Biografia & Narrativa</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-grimoire-muted mb-1 font-semibold">Aparência</label>
+                                <textarea id="char-appearance" oninput="updateCharacterField('appearance', this.value)"
+                                    rows="3"
+                                    class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg p-2.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs text-grimoire-muted mb-1 font-semibold">Personalidade</label>
+                                <textarea id="char-personality"
+                                    oninput="updateCharacterField('personality', this.value)" rows="3"
+                                    class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg p-2.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-grimoire-muted mb-1 font-semibold">História</label>
+                                <textarea id="char-history" oninput="updateCharacterField('history', this.value)"
+                                    rows="4"
+                                    class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg p-2.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-grimoire-muted mb-1 font-semibold">Objetivos na
+                                    Torre</label>
+                                <textarea id="char-objectives" oninput="updateCharacterField('objectives', this.value)"
+                                    rows="4"
+                                    class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg p-2.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Fields Section -->
+                    <div class="bg-grimoire-card grimoire-border rounded-xl p-5 space-y-4">
+                        <div class="flex justify-between items-center border-b border-grimoire-border pb-2">
+                            <h3 class="text-base font-cinzel font-bold text-grimoire-gold"><i
+                                    class="fa-solid fa-puzzle-piece mr-2"></i>Campos Personalizados</h3>
+                            <button onclick="openAddCustomFieldModal()"
+                                class="px-3 py-1 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-xs font-semibold rounded-lg transition">
+                                <i class="fa-solid fa-plus mr-1"></i> Adicionar Campo
+                            </button>
+                        </div>
+                        <div id="custom-fields-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: ATRIBUTOS & STATUS -->
+        <section id="tab-atributos" class="tab-content hidden animate-fade-in space-y-6">
+            <!-- Attributes Cards with Automatic Dice Conversion -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Físico -->
+                <div class="bg-grimoire-card grimoire-border rounded-xl p-6 text-center relative overflow-hidden group">
+                    <div
+                        class="absolute -right-6 -bottom-6 text-grimoire-border opacity-20 text-8xl font-cinzel select-none pointer-events-none">
+                        F</div>
+                    <h3 class="text-lg font-cinzel font-bold text-grimoire-gold mb-2"><i
+                            class="fa-solid fa-shield-halved mr-1"></i> FÍSICO</h3>
+                    <p class="text-xs text-grimoire-muted mb-4">Força, vigor, resistência e destreza física.</p>
+
+                    <div class="flex items-center justify-center gap-4 mb-4">
+                        <button onclick="adjustAttribute('physical', -1)"
+                            class="w-10 h-10 bg-grimoire-border hover:bg-grimoire-redDark text-white rounded-lg text-lg font-bold transition flex items-center justify-center">-</button>
+                        <input type="number" id="attr-physical" min="1" max="20" value="10"
+                            oninput="onAttributeInput('physical', this.value)"
+                            class="w-20 text-center bg-grimoire-bg border border-grimoire-border rounded-lg py-2 text-xl font-bold text-grimoire-gold focus:outline-none focus:border-grimoire-gold">
+                        <button onclick="adjustAttribute('physical', 1)"
+                            class="w-10 h-10 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-white rounded-lg text-lg font-bold transition flex items-center justify-center">+</button>
+                    </div>
+
+                    <div class="bg-grimoire-bg border border-grimoire-border rounded-lg p-3">
+                        <span class="text-xs text-grimoire-muted block mb-1">Dado Correspondente</span>
+                        <span id="dice-physical" class="text-xl font-cinzel font-bold text-grimoire-gold">1d10</span>
+                    </div>
+                </div>
+
+                <!-- Emoção -->
+                <div class="bg-grimoire-card grimoire-border rounded-xl p-6 text-center relative overflow-hidden group">
+                    <div
+                        class="absolute -right-6 -bottom-6 text-grimoire-border opacity-20 text-8xl font-cinzel select-none pointer-events-none">
+                        E</div>
+                    <h3 class="text-lg font-cinzel font-bold text-grimoire-gold mb-2"><i
+                            class="fa-solid fa-heart-pulse mr-1"></i> EMOÇÃO</h3>
+                    <p class="text-xs text-grimoire-muted mb-4">Carisma, empatia, coragem e força de vontade.</p>
+
+                    <div class="flex items-center justify-center gap-4 mb-4">
+                        <button onclick="adjustAttribute('emotion', -1)"
+                            class="w-10 h-10 bg-grimoire-border hover:bg-grimoire-redDark text-white rounded-lg text-lg font-bold transition flex items-center justify-center">-</button>
+                        <input type="number" id="attr-emotion" min="1" max="20" value="10"
+                            oninput="onAttributeInput('emotion', this.value)"
+                            class="w-20 text-center bg-grimoire-bg border border-grimoire-border rounded-lg py-2 text-xl font-bold text-grimoire-gold focus:outline-none focus:border-grimoire-gold">
+                        <button onclick="adjustAttribute('emotion', 1)"
+                            class="w-10 h-10 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-white rounded-lg text-lg font-bold transition flex items-center justify-center">+</button>
+                    </div>
+
+                    <div class="bg-grimoire-bg border border-grimoire-border rounded-lg p-3">
+                        <span class="text-xs text-grimoire-muted block mb-1">Dado Correspondente</span>
+                        <span id="dice-emotion" class="text-xl font-cinzel font-bold text-grimoire-gold">1d10</span>
+                    </div>
+                </div>
+
+                <!-- Mente -->
+                <div class="bg-grimoire-card grimoire-border rounded-xl p-6 text-center relative overflow-hidden group">
+                    <div
+                        class="absolute -right-6 -bottom-6 text-grimoire-border opacity-20 text-8xl font-cinzel select-none pointer-events-none">
+                        M</div>
+                    <h3 class="text-lg font-cinzel font-bold text-grimoire-gold mb-2"><i
+                            class="fa-solid fa-brain mr-1"></i> MENTE</h3>
+                    <p class="text-xs text-grimoire-muted mb-4">Inteligência, lógica, perspicácia e memória.</p>
+
+                    <div class="flex items-center justify-center gap-4 mb-4">
+                        <button onclick="adjustAttribute('mind', -1)"
+                            class="w-10 h-10 bg-grimoire-border hover:bg-grimoire-redDark text-white rounded-lg text-lg font-bold transition flex items-center justify-center">-</button>
+                        <input type="number" id="attr-mind" min="1" max="20" value="10"
+                            oninput="onAttributeInput('mind', this.value)"
+                            class="w-20 text-center bg-grimoire-bg border border-grimoire-border rounded-lg py-2 text-xl font-bold text-grimoire-gold focus:outline-none focus:border-grimoire-gold">
+                        <button onclick="adjustAttribute('mind', 1)"
+                            class="w-10 h-10 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-white rounded-lg text-lg font-bold transition flex items-center justify-center">+</button>
+                    </div>
+
+                    <div class="bg-grimoire-bg border border-grimoire-border rounded-lg p-3">
+                        <span class="text-xs text-grimoire-muted block mb-1">Dado Correspondente</span>
+                        <span id="dice-mind" class="text-xl font-cinzel font-bold text-grimoire-gold">1d10</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Attributes Section -->
+            <div class="bg-grimoire-card grimoire-border rounded-xl p-6 space-y-4">
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-grimoire-border pb-3">
+                    <div>
+                        <h3 class="text-lg font-cinzel font-bold text-grimoire-gold">
+                            <i class="fa-solid fa-sliders mr-2"></i>Atributos Personalizados
+                        </h3>
+                        <p class="text-xs text-grimoire-muted mt-1">Crie atributos extras para seu sistema.</p>
+                    </div>
+                    <button onclick="createCustomAttribute()"
+                        class="px-3 py-2 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold text-xs rounded-lg transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Criar Atributo
+                    </button>
+                </div>
+                <div id="custom-attributes-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Renderizado pelo JavaScript -->
+                </div>
+            </div>
+
+            <!-- Status Section -->
+            <div class="bg-grimoire-card grimoire-border rounded-xl p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-grimoire-border pb-3">
+                    <h3 class="text-lg font-cinzel font-bold text-grimoire-gold"><i
+                            class="fa-solid fa-heart-pulse mr-2"></i>Status do Personagem</h3>
+                    <span class="text-xs text-grimoire-muted">Esquiva (Físico), Percepção (Mente), Intuição
+                        (Emoção)</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <!-- Vida -->
+                    <div class="bg-grimoire-bg border border-grimoire-border rounded-xl p-4 text-center space-y-2">
+                        <label class="block text-xs font-cinzel font-bold text-grimoire-gold">VIDA</label>
+                        <div class="flex items-center justify-center gap-2">
+                            <input type="number" id="status-hp-current" oninput="updateStatusField()"
+                                class="w-16 text-center bg-grimoire-card border border-grimoire-border rounded-lg py-1 text-lg font-bold text-grimoire-text"
+                                placeholder="Atual">
+                            <span class="text-grimoire-muted">/</span>
+                            <input type="number" id="status-hp-max" oninput="updateStatusField()"
+                                class="w-16 text-center bg-grimoire-card border border-grimoire-border rounded-lg py-1 text-lg font-bold text-grimoire-text"
+                                placeholder="Máx">
+                        </div>
+                        <span class="text-xs text-grimoire-muted block">Pontos de Vida</span>
+                    </div>
+
+                    <!-- C.A. -->
+                    <div class="bg-grimoire-bg border border-grimoire-border rounded-xl p-4 text-center space-y-2">
+                        <label class="block text-xs font-cinzel font-bold text-grimoire-gold">C.A.</label>
+                        <input type="number" id="status-armor" oninput="updateStatusField()"
+                            class="w-20 mx-auto text-center bg-grimoire-card border border-grimoire-border rounded-lg py-1 text-xl font-bold text-grimoire-text block">
+                        <span class="text-xs text-grimoire-muted block">Classe de Armadura</span>
+                    </div>
+
+                    <!-- Esquiva -->
+                    <div
+                        class="bg-grimoire-bg border border-grimoire-border rounded-xl p-4 text-center space-y-2 relative">
+                        <div class="flex justify-between items-center px-2">
+                            <label class="block text-xs font-cinzel font-bold text-grimoire-gold">ESQUIVA</label>
+                            <button onclick="toggleManualStatus('dodge')" id="btn-manual-dodge"
+                                class="text-[10px] bg-grimoire-border px-1.5 py-0.5 rounded text-grimoire-muted hover:text-white"
+                                title="Alternar automático/manual">Auto</button>
+                        </div>
+                        <input type="number" id="status-dodge" oninput="updateManualStatusVal('dodge', this.value)"
+                            class="w-20 mx-auto text-center bg-grimoire-card border border-grimoire-border rounded-lg py-1 text-xl font-bold text-grimoire-text block"
+                            readonly>
+                        <span class="text-xs text-grimoire-muted block">Baseado em Físico</span>
+                    </div>
+
+                    <!-- Percepção -->
+                    <div
+                        class="bg-grimoire-bg border border-grimoire-border rounded-xl p-4 text-center space-y-2 relative">
+                        <div class="flex justify-between items-center px-2">
+                            <label class="block text-xs font-cinzel font-bold text-grimoire-gold">PERCEPÇÃO</label>
+                            <button onclick="toggleManualStatus('perception')" id="btn-manual-perception"
+                                class="text-[10px] bg-grimoire-border px-1.5 py-0.5 rounded text-grimoire-muted hover:text-white"
+                                title="Alternar automático/manual">Auto</button>
+                        </div>
+                        <input type="number" id="status-perception"
+                            oninput="updateManualStatusVal('perception', this.value)"
+                            class="w-20 mx-auto text-center bg-grimoire-card border border-grimoire-border rounded-lg py-1 text-xl font-bold text-grimoire-text block"
+                            readonly>
+                        <span class="text-xs text-grimoire-muted block">Baseado em Mente</span>
+                    </div>
+
+                    <!-- Intuição -->
+                    <div
+                        class="bg-grimoire-bg border border-grimoire-border rounded-xl p-4 text-center space-y-2 relative">
+                        <div class="flex justify-between items-center px-2">
+                            <label class="block text-xs font-cinzel font-bold text-grimoire-gold">INTUIÇÃO</label>
+                            <button onclick="toggleManualStatus('intuition')" id="btn-manual-intuition"
+                                class="text-[10px] bg-grimoire-border px-1.5 py-0.5 rounded text-grimoire-muted hover:text-white"
+                                title="Alternar automático/manual">Auto</button>
+                        </div>
+                        <input type="number" id="status-intuition"
+                            oninput="updateManualStatusVal('intuition', this.value)"
+                            class="w-20 mx-auto text-center bg-grimoire-card border border-grimoire-border rounded-lg py-1 text-xl font-bold text-grimoire-text block"
+                            readonly>
+                        <span class="text-xs text-grimoire-muted block">Baseado em Emoção</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: ORIGEM -->
+        <section id="tab-origem" class="tab-content hidden animate-fade-in space-y-6">
+            <div class="bg-grimoire-card grimoire-border rounded-xl p-6 space-y-6">
+                <div
+                    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-grimoire-border pb-4">
+                    <div>
+                        <h3 class="text-lg font-cinzel font-bold text-grimoire-gold"><i
+                                class="fa-solid fa-book-atlas mr-2"></i>Biblioteca de Origens da Torre</h3>
+                        <p class="text-xs text-grimoire-muted">Selecione sua origem anterior à entrada na Torre. Concede
+                            bônus contextuais (+2 por padrão).</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <input type="text" id="origin-search" oninput="renderOrigins()"
+                            placeholder="Pesquisar origem..."
+                            class="bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold w-full md:w-64">
+                        <button onclick="openCustomOriginModal()"
+                            class="px-3 py-1.5 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-xs font-semibold rounded-lg transition whitespace-nowrap">
+                            <i class="fa-solid fa-plus mr-1"></i> Nova Origem
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selected Origin Display -->
+                <div id="selected-origin-card"
+                    class="bg-grimoire-bg border border-grimoire-gold rounded-xl p-5 relative">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Origins Grid -->
+                <div id="origins-grid"
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-2">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: HABILIDADES -->
+        <section id="tab-habilidades" class="tab-content hidden animate-fade-in space-y-6">
+            <div class="bg-grimoire-card grimoire-border rounded-xl p-6 space-y-6">
+                <div
+                    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-grimoire-border pb-4">
+                    <div>
+                        <h3 class="text-lg font-cinzel font-bold text-grimoire-gold"><i
+                                class="fa-solid fa-wand-sparkles mr-2"></i>Habilidades do Personagem</h3>
+                        <p class="text-xs text-grimoire-muted">Gerencie suas magias, técnicas e poderes acumulados na
+                            Torre.</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <input type="text" id="ability-search" oninput="renderAbilities()"
+                            placeholder="Pesquisar habilidade..."
+                            class="bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-1.5 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold w-full md:w-64">
+                        <button onclick="openAbilityModal()"
+                            class="px-3 py-1.5 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold text-xs rounded-lg transition whitespace-nowrap">
+                            <i class="fa-solid fa-plus mr-1"></i> Nova Habilidade
+                        </button>
+                    </div>
+                </div>
+
+                <div id="abilities-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: ANOTAÇÕES -->
+        <section id="tab-anotacoes" class="tab-content hidden animate-fade-in space-y-6">
+            <div class="bg-grimoire-card grimoire-border rounded-xl p-6 space-y-6">
+                <div
+                    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-grimoire-border pb-4">
+                    <div>
+                        <h3 class="text-lg font-cinzel font-bold text-grimoire-gold"><i
+                                class="fa-solid fa-feather mr-2"></i>Grimório de Anotações</h3>
+                        <p class="text-xs text-grimoire-muted">Organize sua história, diário, missões e segredos
+                            descobertos.</p>
+                    </div>
+                    <button onclick="openNoteModal()"
+                        class="px-3 py-1.5 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold text-xs rounded-lg transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Nova Nota
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- Categories Sidebar -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-cinzel font-bold text-grimoire-muted uppercase tracking-wider mb-2">
+                            Categorias</h4>
+                        <div id="notes-categories-list" class="space-y-1">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Notes Content Area -->
+                    <div class="md:col-span-3 space-y-4">
+                        <div id="notes-container" class="space-y-4">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-grimoire-card border-t border-grimoire-border py-4 px-6 text-center text-xs text-grimoire-muted">
+        <p>A Torre das Provações — RPG &copy; 2026. Todos os direitos reservados. Ferramenta não oficial de
+            gerenciamento.</p>
+    </footer>
+
+    <!-- MODALS FORMS -->
+
+    <!-- Custom Field Modal -->
+    <div id="modal-custom-field"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div
+            class="bg-grimoire-card grimoire-gold-border rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-fade-in">
+            <h3 class="text-lg font-cinzel font-bold text-grimoire-gold mb-4">Adicionar Campo Personalizado</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Nome do Campo</label>
+                    <input type="text" id="cf-name"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        placeholder="Ex: Facção, Alinhamento, Relíquia">
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Categoria</label>
+                    <input type="text" id="cf-category"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        value="Geral">
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Valor / Conteúdo</label>
+                    <textarea id="cf-value" rows="3"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"
+                        placeholder="Digite o conteúdo..."></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeModalCustomField()"
+                    class="px-4 py-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg text-sm transition">Cancelar</button>
+                <button onclick="saveCustomField()"
+                    class="px-4 py-2 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold rounded-lg text-sm transition">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Origin Modal -->
+    <div id="modal-custom-origin"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div
+            class="bg-grimoire-card grimoire-gold-border rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl animate-fade-in">
+            <h3 class="text-lg font-cinzel font-bold text-grimoire-gold mb-4">Criar Origem Personalizada</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Nome da Origem</label>
+                    <input type="text" id="co-name"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        placeholder="Ex: Cavaleiro Caído">
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Experiência Anterior</label>
+                    <input type="text" id="co-exp"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        placeholder="Ex: Anos de patrulha nas muralhas da Torre.">
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Descrição</label>
+                    <textarea id="co-desc" rows="2"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"
+                        placeholder="Detalhes da origem..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Bônus Aplicável (+2 por padrão)</label>
+                    <input type="text" id="co-bonus"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        value="+2 em testes de combate pesado e armaduras">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeCustomOriginModal()"
+                    class="px-4 py-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg text-sm transition">Cancelar</button>
+                <button onclick="saveCustomOrigin()"
+                    class="px-4 py-2 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold rounded-lg text-sm transition">Salvar
+                    Origem</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ability Modal -->
+    <div id="modal-ability"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div
+            class="bg-grimoire-card grimoire-gold-border rounded-xl p-6 max-w-xl w-full mx-4 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+            <h3 id="ability-modal-title" class="text-lg font-cinzel font-bold text-grimoire-gold mb-4">Nova Habilidade
+            </h3>
+            <input type="hidden" id="ability-id">
+            <div class="space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-grimoire-muted">Nome da Habilidade</label>
+                        <input type="text" id="ab-name"
+                            class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-grimoire-muted">Categoria</label>
+                        <input type="text" id="ab-category"
+                            class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                            value="Magia / Ataque">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs text-grimoire-muted">Proficiência</label>
+                        <input type="text" id="ab-proficiency"
+                            class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                            placeholder="Ex: Avançado">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-grimoire-muted">Custo</label>
+                        <input type="text" id="ab-cost"
+                            class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                            placeholder="Ex: 5 Mana">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-grimoire-muted">Recarga</label>
+                        <input type="text" id="ab-cooldown"
+                            class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                            placeholder="Ex: 2 Rodadas">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Descrição</label>
+                    <textarea id="ab-desc" rows="2"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"
+                        placeholder="Breve descrição..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Efeitos Detalhados</label>
+                    <textarea id="ab-effects" rows="3"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"
+                        placeholder="Regras e efeitos da habilidade..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Requisitos</label>
+                    <input type="text" id="ab-req"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        placeholder="Ex: Físico 12">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeAbilityModal()"
+                    class="px-4 py-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg text-sm transition">Cancelar</button>
+                <button onclick="saveAbility()"
+                    class="px-4 py-2 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold rounded-lg text-sm transition">Salvar
+                    Habilidade</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div id="modal-note"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div
+            class="bg-grimoire-card grimoire-gold-border rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl animate-fade-in">
+            <h3 class="text-lg font-cinzel font-bold text-grimoire-gold mb-4">Nova Anotação / Nota Rápida</h3>
+            <input type="hidden" id="note-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Título</label>
+                    <input type="text" id="note-title"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        placeholder="Título da nota...">
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Categoria</label>
+                    <input type="text" id="note-category"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold"
+                        value="História">
+                </div>
+                <div>
+                    <label class="block text-xs text-grimoire-muted">Conteúdo</label>
+                    <textarea id="note-content" rows="5"
+                        class="w-full bg-grimoire-bg border border-grimoire-border rounded-lg px-3 py-2 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold resize-none"
+                        placeholder="Escreva suas anotações..."></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeNoteModal()"
+                    class="px-4 py-2 bg-grimoire-border hover:bg-zinc-700 text-grimoire-text rounded-lg text-sm transition">Cancelar</button>
+                <button onclick="saveNote()"
+                    class="px-4 py-2 bg-grimoire-gold hover:bg-grimoire-goldLight text-white font-semibold rounded-lg text-sm transition">Salvar
+                    Nota</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- 30 Origins Pre-defined Library ---
+        const PRESET_ORIGINS = [
+            { id: '1', name: 'Cozinheiro', category: 'Civil', description: 'Experiência no preparo de alimentos.', experience: 'Anos cozinhando em tavernas perigosas e acampamentos.', bonus: '+2 em testes relacionados a cozinhar, identificar ingredientes e preparar refeições especiais.' },
+            { id: '2', name: 'Médico', category: 'Saúde', description: 'Experiência em medicina e cirurgia.', experience: 'Atendimento em campos de batalha e hospitais lotados.', bonus: '+2 em testes relacionados a primeiros socorros, diagnóstico e tratamento de ferimentos.' },
+            { id: '3', name: 'Soldado', category: 'Combate', description: 'Experiência militar disciplinada.', experience: 'Serviço ativo em legiões e patrulhas de fronteira.', bonus: '+2 em testes relacionados a estratégias militares, disciplina e reconhecimento de ameaças.' },
+            { id: '4', name: 'Caçador', category: 'Sobrevivência', description: 'Experiência na caça e rastreio.', experience: 'Anos isolado em florestas densas e montanhas geladas.', bonus: '+2 em testes relacionados a rastreamento, caça e identificação de animais.' },
+            { id: '5', name: 'Ladrão', category: 'Submundo', description: 'Experiência furtiva nas sombras.', experience: 'Operações em becos escuros e mansões protegidas.', bonus: '+2 em testes relacionados a furtos, infiltração e abertura de fechaduras.' },
+            { id: '6', name: 'Detetive', category: 'Investigação', description: 'Experiência investigativa e lógica.', experience: 'Resolução de casos complexos e mistérios urbanos.', bonus: '+2 em testes relacionados a investigação, análise de evidências e reconstrução de acontecimentos.' },
+            { id: '7', name: 'Professor', category: 'Acadêmico', description: 'Experiência acadêmica e didática.', experience: 'Ensino em grandes universidades e tutoria particular.', bonus: '+2 em testes relacionados a ensinar, explicar conceitos e transmitir conhecimento.' },
+            { id: '8', name: 'Engenheiro', category: 'Técnico', description: 'Experiência com engenharia e estruturas.', experience: 'Projetos de pontes, fortalezas e mecanismos complexos.', bonus: '+2 em testes relacionados a mecanismos, construção e reparos.' },
+            { id: '9', name: 'Mecânico', category: 'Técnico', description: 'Experiência com máquinas e engrenagens.', experience: 'Manutenção de maquinário pesado e veículos de cerco.', bonus: '+2 em testes relacionados a veículos, ferramentas e manutenção.' },
+            { id: '10', name: 'Atleta', category: 'Esportivo', description: 'Experiência atlética e física.', experience: 'Competições de grande porte e treinamento rigoroso.', bonus: '+2 em testes relacionados a competições, resistência física e atividades esportivas.' },
+            { id: '11', name: 'Artista', category: 'Artístico', description: 'Experiência em artes visuais.', experience: 'Pintura, escultura e exposições públicas.', bonus: '+2 em testes relacionados a apresentações, pintura, música e expressão artística.' },
+            { id: '12', name: 'Músico', category: 'Artístico', description: 'Experiência musical e performática.', experience: 'Apresentações em grandes salões e ruas.', bonus: '+2 em testes relacionados a instrumentos, composição e performances musicais.' },
+            { id: '13', name: 'Escritor', category: 'Literário', description: 'Experiência literária e redação.', experience: 'Produção de crônicas, romances e tratados.', bonus: '+2 em testes relacionados a escrita, interpretação de textos e criação de histórias.' },
+            { id: '14', name: 'Diplomata', category: 'Político', description: 'Experiência em negociações e tratados.', experience: 'Embaixadas e cortes de reinos rivais.', bonus: '+2 em testes relacionados a negociações, acordos e mediação de conflitos.' },
+            { id: '15', name: 'Advogado', category: 'Jurídico', description: 'Experiência jurídica e argumentação.', experience: 'Tribunais e defesa de leis ancestrais.', bonus: '+2 em testes relacionados a leis, argumentação e interpretação de regras.' },
+            { id: '16', name: 'Empresário', category: 'Comercial', description: 'Experiência comercial e administração.', experience: 'Gestão de guildas mercantis e rotas de comércio.', bonus: '+2 em testes relacionados a negociações comerciais, administração e avaliação de negócios.' },
+            { id: '17', name: 'Psicólogo', category: 'Humano', description: 'Experiência com o comportamento humano.', experience: 'Análise mimental e aconselhamento de indivíduos.', bonus: '+2 em testes relacionados a comportamento humano, emoções e compreensão de indivíduos.' },
+            { id: '18', name: 'Arqueólogo', category: 'Histórico', description: 'Experiência em ruínas e escavações.', experience: 'Exploração de catacumbas e civilizações perdidas.', bonus: '+2 em testes relacionados a ruínas, artefatos e civilizações antigas.' },
+            { id: '19', name: 'Explorador', category: 'Viagem', description: 'Experiência em terras desconhecidas.', experience: 'Desbravamento de mapas inexplorados.', bonus: '+2 em testes relacionados a navegação, exploração e orientação em ambientes desconhecidos.' },
+            { id: '20', name: 'Sobrevivente', category: 'Sobrevivência', description: 'Experiência em condições extremas.', experience: 'Superação de catástrofes e ambientes hostis.', bonus: '+2 em testes relacionados a sobrevivência, improvisação e obtenção de recursos.' },
+            { id: '21', name: 'Agricultor', category: 'Rural', description: 'Experiência rural e cultivo da terra.', experience: 'Anos trabalhando no campo e colheitas difíceis.', bonus: '+2 em testes relacionados a cultivo, plantas e identificação de recursos naturais.' },
+            { id: '22', name: 'Pescador', category: 'Aquático', description: 'Experiência em mares e rios.', experience: 'Navegação costeira e pesca em águas profundas.', bonus: '+2 em testes relacionados a pesca, navegação simples e identificação de criaturas aquáticas.' },
+            { id: '23', name: 'Ferreiro', category: 'Metalurgia', description: 'Experiência na forja de metais.', experience: 'Produção de armas, armaduras e ferramentas.', bonus: '+2 em testes relacionados a forja, fabricação e reparo de equipamentos metálicos.' },
+            { id: '24', name: 'Alquimista', category: 'Ciência', description: 'Experiência com poções e compostos.', experience: 'Laboratórios enfumaçados e misturas voláteis.', bonus: '+2 em testes relacionados a misturas, experimentos e identificação de compostos.' },
+            { id: '25', name: 'Religioso', category: 'Espiritual', description: 'Experiência espiritual e cultos.', experience: 'Templos sagrados, orações e rituais ancestrais.', bonus: '+2 em testes relacionados a rituais, tradições religiosas e conhecimentos espirituais.' },
+            { id: '26', name: 'Criminoso', category: 'Submundo', description: 'Experiência com o submundo do crime.', experience: 'Contatos perigosos e contrabandos.', bonus: '+2 em testes relacionados ao submundo, contatos ilegais e reconhecimento de atividades criminosas.' },
+            { id: '27', name: 'Garçom', category: 'Social', description: 'Experiência em atendimento e ambientes sociais.', experience: 'Salões movimentados e observação discreta.', bonus: '+2 em testes relacionados a atendimento, observação de clientes e ambientes sociais.' },
+            { id: '28', name: 'Piloto', category: 'Condução', description: 'Experiência em pilotagem e veículos.', experience: 'Condução veloz em terrenos perigosos.', bonus: '+2 em testes relacionados a pilotagem, direção e controle de veículos.' },
+            { id: '29', name: 'Influenciador', category: 'Público', description: 'Experiência com carisma público.', experience: 'Oratória e liderança de multidões.', bonus: '+2 em testes relacionados a comunicação, popularidade e criação de conteúdo.' },
+            { id: '30', name: 'Estudante', category: 'Acadêmico', description: 'Experiência em aprendizado geral.', experience: 'Leitura intensa de pergaminhos e teorias.', bonus: '+2 em testes relacionados a conhecimentos escolares, pesquisa e aprendizado.' }
+        ];
+
+        // --- App State Management ---
+        let appData = {
+            activeId: null,
+            characters: []
+        };
+
+        // Default Character Template
+        function createDefaultCharacter(name = "Novo Aventureiro") {
+            return {
+
+                name: name,
+                title: "Iniciante da Torre",
+                player: "Jogador",
+                age: 20,
+                gender: "Não Especificado",
+                appearance: "Um aventureiro misterioso que acaba de cruzar os portões da Torre.",
+                personality: "Determinado a desvendar os segredos dos andares superiores.",
+                history: "Veio de terras distantes em busca de respostas.",
+                objectives: "Chegar ao topo da Torre.",
+                image: "",
+                attributes: {
+                    physical: 10,
+                    emotion: 10,
+                    mind: 10
+                },
+                customAttributes: [],
+                status: {
+                    hp_current: 20,
+                    hp_max: 20,
+                    armor: 12,
+                    dodge_manual: false,
+                    dodge_val: 10,
+                    perception_manual: false,
+                    perception_val: 10,
+                    intuition_manual: false,
+                    intuition_val: 10
+                },
+                selectedOriginId: '1',
+                customOrigins: [],
+                customFields: [
+                    { id: 'cf_1', name: 'Facção', category: 'Geral', value: 'Nenhuma' }
+                ],
+                abilities: [
+                    { id: 'ab_1', name: 'Ataque Rápido', category: 'Combate', proficiency: 'Iniciante', description: 'Um golpe veloz com arma branca.', effects: 'Causa dano base do dado físico sem penalidade.', requirements: 'Físico 8', cost: '1 Estamina', cooldown: 'Nenhum' }
+                ],
+                notes: [
+                    { id: 'note_1', category: 'História', title: 'Primeiro Contato com a Torre', content: 'As portas se fecharam atrás de mim. Não há volta.' }
+                ]
+            };
+        }
+
+        // --- Initialization & LocalStorage ---
+        function initApp() {
+            const saved = localStorage.getItem('torre_provacoes_data');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch (e) {
+                    console.error("Erro ao carregar dados salvos", e);
+                }
+            }
+
+            if (!appData.characters || appData.characters.length === 0) {
+                const initialChar = createDefaultCharacter("Valen, o Desbravador");
+                appData.characters = [initialChar];
+                appData.activeId = initialChar.id;
+            } else if (!appData.activeId || !appData.characters.some(c => c.id === appData.activeId)) {
+                appData.activeId = appData.characters[0].id;
+            }
+
+            saveAndRefresh();
+        }
+
+        function saveAppData() {
+            localStorage.setItem('torre_provacoes_data', JSON.stringify(appData));
+        }
+
+        function getActiveCharacter() {
+            return appData.characters.find(c => c.id === appData.activeId) || appData.characters[0];
+        }
+
+        function saveAndRefresh() {
+            saveAppData();
+            populateCharacterSelector();
+            loadActiveCharacterToUI();
+        }
+
+        // --- Character Selector ---
+        function populateCharacterSelector() {
+            const select = document.getElementById('character-select');
+            select.innerHTML = '';
+            appData.characters.forEach(char => {
+                const opt = document.createElement('option');
+                opt.value = char.id;
+                opt.textContent = char.name + (char.title ? ` (${char.title})` : '');
+                if (char.id === appData.activeId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function switchCharacter(id) {
+            appData.activeId = id;
+            saveAndRefresh();
+        }
+
+        function openNewCharacterModal() {
+            showPromptModal("Criar Novo Personagem", "Digite o nome do novo aventureiro:", (name) => {
+                if (!name) return;
+                const newChar = createDefaultCharacter(name);
+                appData.characters.push(newChar);
+                appData.activeId = newChar.id;
+                saveAndRefresh();
+            });
+        }
+
+        function duplicateCurrentCharacter() {
+            const current = getActiveCharacter();
+            const copy = JSON.parse(JSON.stringify(current));
+            copy.id = 'char_' + Date.now() + Math.random().toString(36).substring(2, 7);
+            copy.name = current.name + " (Cópia)";
+            appData.characters.push(copy);
+            appData.activeId = copy.id;
+            saveAndRefresh();
+            showToast("Ficha duplicada com sucesso!");
+        }
+
+        function confirmDeleteCharacter() {
+            if (appData.characters.length <= 1) {
+                showAlertModal("Aviso", "Você não pode excluir o único personagem restante no grimório.");
+                return;
+            }
+            showConfirmModal("Excluir Ficha", "Tem certeza que deseja excluir permanentemente esta ficha? Esta ação não pode ser desfeita.", () => {
+                appData.characters = appData.characters.filter(c => c.id !== appData.activeId);
+                appData.activeId = appData.characters[0].id;
+                saveAndRefresh();
+                showToast("Ficha excluída.");
+            });
+        }
+
+        // --- Load Character Data to UI ---
+        function loadActiveCharacterToUI() {
+            const char = getActiveCharacter();
+            if (!char) return;
+
+            // Personagem Tab
+            document.getElementById('char-name').value = char.name || '';
+            document.getElementById('char-title').value = char.title || '';
+            document.getElementById('char-player').value = char.player || '';
+            document.getElementById('char-age').value = char.age || '';
+            document.getElementById('char-gender').value = char.gender || '';
+            document.getElementById('char-appearance').value = char.appearance || '';
+            document.getElementById('char-personality').value = char.personality || '';
+            document.getElementById('char-history').value = char.history || '';
+            document.getElementById('char-objectives').value = char.objectives || '';
+            document.getElementById('char-image').value = char.image || '';
+            document.getElementById('char-img-preview').src = char.image || 'https://placehold.co/200x200/12141c/c5a059?text=Sem+Foto';
+
+            // Compatibilidade com fichas antigas
+            if (!Array.isArray(char.customAttributes)) char.customAttributes = [];
+
+            // Atributos & Status
+            document.getElementById('attr-physical').value = char.attributes.physical;
+            document.getElementById('attr-emotion').value = char.attributes.emotion;
+            document.getElementById('attr-mind').value = char.attributes.mind;
+
+            updateDiceDisplay('physical', char.attributes.physical);
+            updateDiceDisplay('emotion', char.attributes.emotion);
+            updateDiceDisplay('mind', char.attributes.mind);
+
+            document.getElementById('status-hp-current').value = char.status.hp_current;
+            document.getElementById('status-hp-max').value = char.status.hp_max;
+            document.getElementById('status-armor').value = char.status.armor;
+
+            // Auto status calculations
+            if (!char.status.dodge_manual) char.status.dodge_val = char.attributes.physical;
+            if (!char.status.perception_manual) char.status.perception_val = char.attributes.mind;
+            if (!char.status.intuition_manual) char.status.intuition_val = char.attributes.emotion;
+
+            document.getElementById('status-dodge').value = char.status.dodge_val;
+            document.getElementById('status-perception').value = char.status.perception_val;
+            document.getElementById('status-intuition').value = char.status.intuition_val;
+
+            updateManualButtonUI('dodge', char.status.dodge_manual);
+            updateManualButtonUI('perception', char.status.perception_manual);
+            updateManualButtonUI('intuition', char.status.intuition_manual);
+
+            renderCustomFields();
+            renderCustomAttributes();
+            renderOrigins();
+            renderAbilities();
+            renderNotes();
+        }
+
+        // --- Tab Switching ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-grimoire-gold', 'text-black', 'shadow-md');
+                el.classList.add('text-grimoire-muted', 'hover:text-white', 'hover:bg-grimoire-border');
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const btn = document.getElementById(`tab-btn-${tabName}`);
+            btn.classList.add('bg-grimoire-gold', 'text-black', 'shadow-md');
+            btn.classList.remove('text-grimoire-muted', 'hover:text-white', 'hover:bg-grimoire-border');
+        }
+
+        // --- Character Field Updates ---
+        function updateCharacterField(field, val) {
+            const char = getActiveCharacter();
+            char[field] = val;
+            if (field === 'image') {
+                document.getElementById('char-img-preview').src = val || 'https://placehold.co/200x200/12141c/c5a059?text=Sem+Foto';
+            }
+            saveAppData();
+            if (field === 'name' || field === 'title') {
+                populateCharacterSelector();
+            }
+        }
+
+        // --- Attributes & Dice Conversion (Table 1-20) ---
+        // 1-2: 1d4, 3-4: 1d6, 5-6: 2d4, 7-8: 1d8, 9-10: 1d10, 11-12: 2d6, 13-14: 2d8, 15-16: 2d10, 17-18: 1d20, 19-20: 2d20
+        function getDiceForScore(score) {
+            const s = parseInt(score) || 1;
+            if (s <= 2) return '1d4';
+            if (s <= 4) return '1d6';
+            if (s <= 6) return '2d4';
+            if (s <= 7) return '1d8'; // 7-8
+            if (s <= 8) return '1d8';
+            if (s <= 10) return '1d10'; // 9-10
+            if (s <= 12) return '2d6'; // 11-12
+            if (s <= 14) return '2d8'; // 13-14
+            if (s <= 16) return '2d10'; // 15-16
+            if (s <= 18) return '1d20'; // 17-18
+            return '2d20'; // 19-20
+        }
+
+        function updateDiceDisplay(attrKey, score) {
+            const dice = getDiceForScore(score);
+            const el = document.getElementById(`dice-${attrKey}`);
+            if (el) el.textContent = dice;
+        }
+
+        function adjustAttribute(attrKey, delta) {
+            const char = getActiveCharacter();
+            let val = (char.attributes[attrKey] || 10) + delta;
+            if (val < 1) val = 1;
+            if (val > 20) val = 20;
+            char.attributes[attrKey] = val;
+            document.getElementById(`attr-${attrKey}`).value = val;
+            updateDiceDisplay(attrKey, val);
+
+            // Sync auto status
+            if (attrKey === 'physical') {
+                if (!char.status.dodge_manual) {
+                    char.status.dodge_val = val;
+                    document.getElementById('status-dodge').value = val;
+                }
+            } else if (attrKey === 'mind') {
+                if (!char.status.perception_manual) {
+                    char.status.perception_val = val;
+                    document.getElementById('status-perception').value = val;
+                }
+            } else if (attrKey === 'emotion') {
+                if (!char.status.intuition_manual) {
+                    char.status.intuition_val = val;
+                    document.getElementById('status-intuition').value = val;
+                }
+            }
+
+            saveAppData();
+        }
+
+        function onAttributeInput(attrKey, val) {
+            let num = parseInt(val);
+            if (isNaN(num)) return;
+            if (num < 1) num = 1;
+            if (num > 20) num = 20;
+            const char = getActiveCharacter();
+            char.attributes[attrKey] = num;
+            updateDiceDisplay(attrKey, num);
+
+            if (attrKey === 'physical' && !char.status.dodge_manual) {
+                char.status.dodge_val = num;
+                document.getElementById('status-dodge').value = num;
+            } else if (attrKey === 'mind' && !char.status.perception_manual) {
+                char.status.perception_val = num;
+                document.getElementById('status-perception').value = num;
+            } else if (attrKey === 'emotion' && !char.status.intuition_manual) {
+                char.status.intuition_val = num;
+                document.getElementById('status-intuition').value = num;
+            }
+
+            saveAppData();
+        }
+
+        // --- Custom Attributes ---
+        function createCustomAttribute() {
+            const name = prompt("Nome do novo atributo:");
+            if (!name || !name.trim()) return;
+
+            const char = getActiveCharacter();
+            if (!Array.isArray(char.customAttributes)) char.customAttributes = [];
+
+            const normalizedName = name.trim();
+            if (char.customAttributes.some(a => a.name.toLowerCase() === normalizedName.toLowerCase())) {
+                showAlertModal("Atribut existente", "Já existe um atributo com esse nome.");
+                return;
+            }
+
+            const initialValue = prompt("Valor inicial do atributo:", "10");
+            if (initialValue === null) return;
+            const parsedValue = parseInt(initialValue, 10);
+            char.customAttributes.push({
+                id: "custom_attr_" + Date.now() + Math.random().toString(36).slice(2, 7),
+                name: normalizedName,
+                value: Number.isFinite(parsedValue) ? parsedValue : 10
+            });
+
+            saveAppData();
+            renderCustomAttributes();
+            showToast("Atributo criado!");
+        }
+
+        function renderCustomAttributes() {
+            const container = document.getElementById("custom-attributes-container");
+            if (!container) return;
+
+            const char = getActiveCharacter();
+            if (!Array.isArray(char.customAttributes)) char.customAttributes = [];
+
+            if (char.customAttributes.length === 0) {
+                container.innerHTML = '<p class="text-sm text-grimoire-muted md:col-span-3">Nenhum atributo personalizado criado ainda.</p>';
+                return;
+            }
+
+            container.innerHTML = char.customAttributes.map(attr => `
+                <div class="bg-grimoire-bg border border-grimoire-border rounded-xl p-4 text-center space-y-3">
+                    <div class="flex justify-between items-start gap-2">
+                        <h4 class="font-cinzel font-bold text-grimoire-gold break-words">${escapeHTML(attr.name)}</h4>
+                        <button onclick="deleteCustomAttribute('${attr.id}')" title="Excluir atributo"
+                            class="text-grimoire-muted hover:text-red-400 transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-center gap-3">
+                        <button onclick="adjustCustomAttribute('${attr.id}', -1)"
+                            class="w-9 h-9 bg-grimoire-border hover:bg-grimoire-redDark text-white rounded-lg font-bold">-</button>
+                        <input type="number" value="${Number(attr.value) || 0}"
+                            onchange="setCustomAttributeValue('${attr.id}', this.value)"
+                            class="w-20 text-center bg-grimoire-card border border-grimoire-border rounded-lg py-2 text-xl font-bold text-grimoire-gold">
+                        <button onclick="adjustCustomAttribute('${attr.id}', 1)"
+                            class="w-9 h-9 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-white rounded-lg font-bold">+</button>
+                    </div>
+                    <div class="bg-grimoire-card border border-grimoire-border rounded-lg p-2">
+                        <span class="text-xs text-grimoire-muted block">Dado correspondente</span>
+                        <span class="font-cinzel font-bold text-grimoire-gold">${getDiceForScore(Number(attr.value) || 1)}</span>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function adjustCustomAttribute(id, delta) {
+            const char = getActiveCharacter();
+            const attr = (char.customAttributes || []).find(a => a.id === id);
+            if (!attr) return;
+            attr.value = (Number(attr.value) || 0) + delta;
+            saveAppData();
+            renderCustomAttributes();
+        }
+
+        function setCustomAttributeValue(id, value) {
+            const char = getActiveCharacter();
+            const attr = (char.customAttributes || []).find(a => a.id === id);
+            if (!attr) return;
+            const parsed = parseInt(value, 10);
+            attr.value = Number.isFinite(parsed) ? parsed : 0;
+            saveAppData();
+            renderCustomAttributes();
+        }
+
+        function deleteCustomAttribute(id) {
+            showConfirmModal("Excluir atributo", "Deseja excluir este atributo personalizado?", () => {
+                const char = getActiveCharacter();
+                char.customAttributes = (char.customAttributes || []).filter(a => a.id !== id);
+                saveAppData();
+                renderCustomAttributes();
+                showToast("Atributo excluído.");
+            });
+        }
+
+        function escapeHTML(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            })[char]);
+        }
+
+        // --- Status Logic ---
+        function updateStatusField() {
+            const char = getActiveCharacter();
+            char.status.hp_current = parseInt(document.getElementById('status-hp-current').value) || 0;
+            char.status.hp_max = parseInt(document.getElementById('status-hp-max').value) || 0;
+            char.status.armor = parseInt(document.getElementById('status-armor').value) || 10;
+            saveAppData();
+        }
+
+        function toggleManualStatus(statusKey) {
+            const char = getActiveCharacter();
+            const manualKey = `${statusKey}_manual`;
+            char.status[manualKey] = !char.status[manualKey];
+
+            if (!char.status[manualKey]) {
+                if (statusKey === 'dodge') char.status.dodge_val = char.attributes.physical;
+                if (statusKey === 'perception') char.status.perception_val = char.attributes.mind;
+                if (statusKey === 'intuition') char.status.intuition_val = char.attributes.emotion;
+            }
+
+            loadActiveCharacterToUI();
+        }
+
+        function updateManualButtonUI(statusKey, isManual) {
+            const btn = document.getElementById(`btn-manual-${statusKey}`);
+            const input = document.getElementById(`status-${statusKey}`);
+            if (isManual) {
+                btn.textContent = "Manual";
+                btn.className = "text-[10px] bg-grimoire-gold text-black font-bold px-1.5 py-0.5 rounded";
+                input.removeAttribute('readonly');
+                input.classList.add('border-grimoire-gold');
+            } else {
+                btn.textContent = "Auto";
+                btn.className = "text-[10px] bg-grimoire-border text-grimoire-muted px-1.5 py-0.5 rounded";
+                input.setAttribute('readonly', 'true');
+                input.classList.remove('border-grimoire-gold');
+            }
+        }
+
+        function updateManualStatusVal(statusKey, val) {
+            const char = getActiveCharacter();
+            const num = parseInt(val) || 0;
+            char.status[`${statusKey}_val`] = num;
+            saveAppData();
+        }
+
+        // --- Custom Fields Logic ---
+        function openAddCustomFieldModal() {
+            document.getElementById('cf-name').value = '';
+            document.getElementById('cf-value').value = '';
+            document.getElementById('modal-custom-field').classList.remove('hidden');
+        }
+
+        function closeModalCustomField() {
+            document.getElementById('modal-custom-field').classList.add('hidden');
+        }
+
+        function saveCustomField() {
+            const name = document.getElementById('cf-name').value.trim();
+            const category = document.getElementById('cf-category').value.trim() || 'Geral';
+            const value = document.getElementById('cf-value').value.trim();
+
+            if (!name) {
+                showAlertModal("Aviso", "O nome do campo é obrigatório.");
+                return;
+            }
+
+            const char = getActiveCharacter();
+            char.customFields.push({
+                id: 'cf_' + Date.now(),
+                name,
+                category,
+                value
+            });
+
+            closeModalCustomField();
+            saveAndRefresh();
+        }
+
+        function deleteCustomField(id) {
+            const char = getActiveCharacter();
+            char.customFields = char.customFields.filter(f => f.id !== id);
+            saveAndRefresh();
+        }
+
+        function renderCustomFields() {
+            const char = getActiveCharacter();
+            const container = document.getElementById('custom-fields-container');
+            container.innerHTML = '';
+
+            if (!char.customFields || char.customFields.length === 0) {
+                container.innerHTML = `<p class="text-xs text-grimoire-muted col-span-2 italic">Nenhum campo personalizado adicionado.</p>`;
+                return;
+            }
+
+            char.customFields.forEach(field => {
+                const div = document.createElement('div');
+                div.className = "bg-grimoire-bg border border-grimoire-border rounded-lg p-3 relative group";
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-xs font-cinzel font-bold text-grimoire-gold">${field.name} <span class="text-[10px] text-grimoire-muted font-normal">(${field.category})</span></span>
+                        <button onclick="deleteCustomField('${field.id}')" class="text-grimoire-muted hover:text-grimoire-redDark text-xs"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <input type="text" value="${field.value || ''}" oninput="updateCustomFieldValue('${field.id}', this.value)" class="w-full bg-grimoire-card border border-grimoire-border rounded px-2 py-1 text-sm text-grimoire-text focus:outline-none focus:border-grimoire-gold">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateCustomFieldValue(id, val) {
+            const char = getActiveCharacter();
+            const field = char.customFields.find(f => f.id === id);
+            if (field) {
+                field.value = val;
+                saveAppData();
+            }
+        }
+
+        // --- Origins Logic ---
+        function renderOrigins() {
+            const char = getActiveCharacter();
+            const searchTerm = (document.getElementById('origin-search').value || '').toLowerCase();
+            const allOrigins = [...PRESET_ORIGINS, ...(char.customOrigins || [])];
+
+            // Selected Origin Card
+            const selectedOrigin = allOrigins.find(o => o.id === char.selectedOriginId) || PRESET_ORIGINS[0];
+            const selCard = document.getElementById('selected-origin-card');
+            selCard.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-cinzel bg-grimoire-gold/20 text-grimoire-gold px-2 py-0.5 rounded uppercase tracking-wider font-semibold">Origem Atual</span>
+                        <h4 class="text-xl font-cinzel font-bold text-grimoire-gold mt-2">${selectedOrigin.name}</h4>
+                        <p class="text-xs text-grimoire-muted mt-1"><strong>Experiência:</strong> ${selectedOrigin.experience || selectedOrigin.description}</p>
+                    </div>
+                    ${selectedOrigin.is_custom ? `<button onclick="deleteCustomOrigin('${selectedOrigin.id}')" class="text-grimoire-muted hover:text-grimoire-redDark text-sm"><i class="fa-solid fa-trash"></i></button>` : ''}
+                </div>
+                <div class="mt-4 pt-3 border-t border-grimoire-border flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                    <p class="text-sm text-grimoire-text"><i class="fa-solid fa-bolt text-grimoire-gold mr-1.5"></i><strong>Bônus Contextual:</strong> ${selectedOrigin.bonus || '+2 em testes relacionados.'}</p>
+                    <span class="text-xs text-grimoire-muted italic">Aplica vantagem contextual direta.</span>
+                </div>
+            `;
+
+            // Grid
+            const grid = document.getElementById('origins-grid');
+            grid.innerHTML = '';
+
+            const filtered = allOrigins.filter(o => o.name.toLowerCase().includes(searchTerm) || o.category.toLowerCase().includes(searchTerm));
+
+            filtered.forEach(origin => {
+                const isSelected = origin.id === char.selectedOriginId;
+                const card = document.createElement('div');
+                card.className = `bg-grimoire-bg border rounded-xl p-4 transition flex flex-col justify-between ${isSelected ? 'border-grimoire-gold shadow-md' : 'border-grimoire-border hover:border-zinc-600'}`;
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] text-grimoire-gold font-cinzel uppercase">${origin.category || 'Geral'}</span>
+                            ${isSelected ? '<span class="text-xs bg-grimoire-gold text-black px-2 py-0.5 rounded font-bold">Selecionada</span>' : ''}
+                        </div>
+                        <h5 class="font-cinzel font-bold text-grimoire-text text-base">${origin.name}</h5>
+                        <p class="text-xs text-grimoire-muted mt-2 line-clamp-2">${origin.description || origin.experience}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-grimoire-border flex justify-between items-center">
+                        <span class="text-xs text-grimoire-gold font-semibold">${origin.bonus ? 'Bônus ativo' : '+2 bônus'}</span>
+                        ${!isSelected ? `<button onclick="selectOrigin('${origin.id}')" class="px-3 py-1 bg-grimoire-border hover:bg-grimoire-gold hover:text-black text-xs font-semibold rounded-lg transition">Selecionar</button>` : ''}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function selectOrigin(id) {
+            const char = getActiveCharacter();
+            char.selectedOriginId = id;
+            saveAndRefresh();
+            showToast("Origem selecionada com sucesso!");
+        }
+
+        function openCustomOriginModal() {
+            document.getElementById('co-name').value = '';
+            document.getElementById('co-exp').value = '';
+            document.getElementById('co-desc').value = '';
+            document.getElementById('co-bonus').value = '+2 em testes específicos da profissão';
+            document.getElementById('modal-custom-origin').classList.remove('hidden');
+        }
+
+        function closeCustomOriginModal() {
+            document.getElementById('modal-custom-origin').classList.add('hidden');
+        }
+
+        function saveCustomOrigin() {
+            const name = document.getElementById('co-name').value.trim();
+            const experience = document.getElementById('co-exp').value.trim();
+            const description = document.getElementById('co-desc').value.trim();
+            const bonus = document.getElementById('co-bonus').value.trim();
+
+            if (!name) {
+                showAlertModal("Aviso", "O nome da origem é obrigatório.");
+                return;
+            }
+
+            const char = getActiveCharacter();
+            if (!char.customOrigins) char.customOrigins = [];
+
+            const newOrig = {
+                id: 'cust_orig_' + Date.now(),
+                name,
+                category: 'Personalizada',
+                description: description || experience,
+                experience: experience,
+                bonus: bonus,
+                is_custom: true
+            };
+
+            char.customOrigins.push(newOrig);
+            char.selectedOriginId = newOrig.id;
+            closeCustomOriginModal();
+            saveAndRefresh();
+            showToast("Origem personalizada criada!");
+        }
+
+        function deleteCustomOrigin(id) {
+            const char = getActiveCharacter();
+            char.customOrigins = char.customOrigins.filter(o => o.id !== id);
+            if (char.selectedOriginId === id) char.selectedOriginId = '1';
+            saveAndRefresh();
+        }
+
+        // --- Abilities Logic ---
+        function renderAbilities() {
+            const char = getActiveCharacter();
+            const searchTerm = (document.getElementById('ability-search').value || '').toLowerCase();
+            const container = document.getElementById('abilities-container');
+            container.innerHTML = '';
+
+            const filtered = (char.abilities || []).filter(a => a.name.toLowerCase().includes(searchTerm) || a.category.toLowerCase().includes(searchTerm));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-grimoire-muted col-span-2 italic text-center py-6">Nenhuma habilidade encontrada.</p>`;
+                return;
+            }
+
+            filtered.forEach(ab => {
+                const card = document.createElement('div');
+                card.className = "bg-grimoire-bg border border-grimoire-border rounded-xl p-5 space-y-3 relative group";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] text-grimoire-gold font-cinzel uppercase bg-grimoire-card px-2 py-0.5 rounded border border-grimoire-border">${ab.category || 'Geral'}</span>
+                            <h4 class="text-base font-cinzel font-bold text-grimoire-gold mt-1">${ab.name}</h4>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="editAbility('${ab.id}')" title="Editar" class="p-1.5 text-grimoire-muted hover:text-white bg-grimoire-card rounded border border-grimoire-border text-xs transition"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="duplicateAbility('${ab.id}')" title="Duplicar" class="p-1.5 text-grimoire-muted hover:text-white bg-grimoire-card rounded border border-grimoire-border text-xs transition"><i class="fa-solid fa-copy"></i></button>
+                            <button onclick="deleteAbility('${ab.id}')" title="Excluir" class="p-1.5 text-grimoire-muted hover:text-grimoire-redDark bg-grimoire-card rounded border border-grimoire-border text-xs transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-grimoire-text">${ab.description || ''}</p>
+                    ${ab.effects ? `<div class="bg-grimoire-card p-2.5 rounded-lg border border-grimoire-border text-xs text-grimoire-muted"><strong class="text-grimoire-gold">Efeitos:</strong> ${ab.effects}</div>` : ''}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t border-grimoire-border text-[11px] text-grimoire-muted">
+                        <div><strong>Proficiência:</strong> ${ab.proficiency || 'N/A'}</div>
+                        <div><strong>Custo:</strong> ${ab.cost || 'N/A'}</div>
+                        <div><strong>Recarga:</strong> ${ab.cooldown || 'N/A'}</div>
+                        <div><strong>Requisitos:</strong> ${ab.requirements || 'N/A'}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openAbilityModal(id = null) {
+            document.getElementById('ability-id').value = id || '';
+            if (id) {
+                const char = getActiveCharacter();
+                const ab = char.abilities.find(a => a.id === id);
+                if (ab) {
+                    document.getElementById('ability-modal-title').textContent = "Editar Habilidade";
+                    document.getElementById('ab-name').value = ab.name || '';
+                    document.getElementById('ab-category').value = ab.category || '';
+                    document.getElementById('ab-proficiency').value = ab.proficiency || '';
+                    document.getElementById('ab-cost').value = ab.cost || '';
+                    document.getElementById('ab-cooldown').value = ab.cooldown || '';
+                    document.getElementById('ab-desc').value = ab.description || '';
+                    document.getElementById('ab-effects').value = ab.effects || '';
+                    document.getElementById('ab-req').value = ab.requirements || '';
+                }
+            } else {
+                document.getElementById('ability-modal-title').textContent = "Nova Habilidade";
+                document.getElementById('ab-name').value = '';
+                document.getElementById('ab-category').value = 'Magia / Ataque';
+                document.getElementById('ab-proficiency').value = 'Iniciante';
+                document.getElementById('ab-cost').value = '';
+                document.getElementById('ab-cooldown').value = '';
+                document.getElementById('ab-desc').value = '';
+                document.getElementById('ab-effects').value = '';
+                document.getElementById('ab-req').value = '';
+            }
+            document.getElementById('modal-ability').classList.remove('hidden');
+        }
+
+        function closeAbilityModal() {
+            document.getElementById('modal-ability').classList.add('hidden');
+        }
+
+        function editAbility(id) {
+            openAbilityModal(id);
+        }
+
+        function saveAbility() {
+            const id = document.getElementById('ability-id').value;
+            const name = document.getElementById('ab-name').value.trim();
+            if (!name) {
+                showAlertModal("Aviso", "O nome da habilidade é obrigatório.");
+                return;
+            }
+
+            const data = {
+                id: id || ('ab_' + Date.now()),
+                name,
+                category: document.getElementById('ab-category').value.trim() || 'Geral',
+                proficiency: document.getElementById('ab-proficiency').value.trim(),
+                cost: document.getElementById('ab-cost').value.trim(),
+                cooldown: document.getElementById('ab-cooldown').value.trim(),
+                description: document.getElementById('ab-desc').value.trim(),
+                effects: document.getElementById('ab-effects').value.trim(),
+                requirements: document.getElementById('ab-req').value.trim()
+            };
+
+            const char = getActiveCharacter();
+            if (!char.abilities) char.abilities = [];
+
+            if (id) {
+                const idx = char.abilities.findIndex(a => a.id === id);
+                if (idx !== -1) char.abilities[idx] = data;
+            } else {
+                char.abilities.push(data);
+            }
+
+            closeAbilityModal();
+            saveAndRefresh();
+            showToast("Habilidade salva com sucesso!");
+        }
+
+        function duplicateAbility(id) {
+            const char = getActiveCharacter();
+            const ab = char.abilities.find(a => a.id === id);
+            if (ab) {
+                const copy = JSON.parse(JSON.stringify(ab));
+                copy.id = 'ab_' + Date.now();
+                copy.name = ab.name + " (Cópia)";
+                char.abilities.push(copy);
+                saveAndRefresh();
+            }
+        }
+
+        function deleteAbility(id) {
+            const char = getActiveCharacter();
+            char.abilities = char.abilities.filter(a => a.id !== id);
+            saveAndRefresh();
+        }
+
+        // --- Notes Logic ---
+        let activeNoteCategory = 'Todas';
+
+        function renderNotes() {
+            const char = getActiveCharacter();
+            const notes = char.notes || [];
+
+            // Extract categories
+            const cats = ['Todas', ...new Set(notes.map(n => n.category || 'Geral'))];
+            const catList = document.getElementById('notes-categories-list');
+            catList.innerHTML = '';
+
+            cats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-3 py-2 rounded-lg text-xs font-cinzel font-semibold transition flex justify-between items-center ${activeNoteCategory === cat ? 'bg-grimoire-gold text-black font-bold' : 'bg-grimoire-bg text-grimoire-muted hover:text-white hover:bg-grimoire-border'}`;
+                btn.innerHTML = `<span>${cat}</span>`;
+                btn.onclick = () => {
+                    activeNoteCategory = cat;
+                    renderNotes();
+                };
+                catList.appendChild(btn);
+            });
+
+            // Filtered Notes
+            const container = document.getElementById('notes-container');
+            container.innerHTML = '';
+
+            const filtered = activeNoteCategory === 'Todas' ? notes : notes.filter(n => (n.category || 'Geral') === activeNoteCategory);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-grimoire-muted italic text-center py-6">Nenhuma anotação nesta categoria.</p>`;
+                return;
+            }
+
+            filtered.forEach(note => {
+                const card = document.createElement('div');
+                card.className = "bg-grimoire-bg border border-grimoire-border rounded-xl p-5 space-y-2";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] text-grimoire-gold font-cinzel uppercase bg-grimoire-card px-2 py-0.5 rounded border border-grimoire-border">${note.category || 'Geral'}</span>
+                            <h4 class="text-base font-cinzel font-bold text-grimoire-text mt-1">${note.title || 'Sem Título'}</h4>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openNoteModal('${note.id}')" title="Editar" class="p-1.5 text-grimoire-muted hover:text-white bg-grimoire-card rounded border border-grimoire-border text-xs transition"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteNote('${note.id}')" title="Excluir" class="p-1.5 text-grimoire-muted hover:text-grimoire-redDark bg-grimoire-card rounded border border-grimoire-border text-xs transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-grimoire-muted whitespace-pre-wrap leading-relaxed mt-2">${note.content || ''}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openNoteModal(id = null) {
+            document.getElementById('note-id').value = id || '';
+            if (id) {
+                const char = getActiveCharacter();
+                const note = (char.notes || []).find(n => n.id === id);
+                if (note) {
+                    document.getElementById('note-title').value = note.title || '';
+                    document.getElementById('note-category').value = note.category || 'História';
+                    document.getElementById('note-content').value = note.content || '';
+                }
+            } else {
+                document.getElementById('note-title').value = '';
+                document.getElementById('note-category').value = activeNoteCategory === 'Todas' ? 'História' : activeNoteCategory;
+                document.getElementById('note-content').value = '';
+            }
+            document.getElementById('modal-note').classList.remove('hidden');
+        }
+
+        function closeNoteModal() {
+            document.getElementById('modal-note').classList.add('hidden');
+        }
+
+        function saveNote() {
+            const id = document.getElementById('note-id').value;
+            const title = document.getElementById('note-title').value.trim();
+            const category = document.getElementById('note-category').value.trim() || 'História';
+            const content = document.getElementById('note-content').value.trim();
+
+            if (!title) {
+                showAlertModal("Aviso", "O título da anotação é obrigatório.");
+                return;
+            }
+
+            const char = getActiveCharacter();
+            if (!char.notes) char.notes = [];
+
+            if (id) {
+                const idx = char.notes.findIndex(n => n.id === id);
+                if (idx !== -1) {
+                    char.notes[idx] = { id, title, category, content };
+                }
+            } else {
+                char.notes.push({
+                    id: 'note_' + Date.now(),
+                    title,
+                    category,
+                    content
+                });
+            }
+
+            closeNoteModal();
+            saveAndRefresh();
+            showToast("Anotação salva!");
+        }
+
+        function deleteNote(id) {
+            const char = getActiveCharacter();
+            char.notes = (char.notes || []).filter(n => n.id !== id);
+            saveAndRefresh();
+        }
+
+        // --- Export / Import JSON ---
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `torre_das_provacoes_backup_${Date.now()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast("Backup JSON exportado com sucesso!");
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.characters && Array.isArray(parsed.characters)) {
+                        appData = parsed;
+                        saveAndRefresh();
+                        showToast("Fichas importadas com sucesso!");
+                    } else {
+                        showAlertModal("Erro", "Arquivo JSON em formato inválido.");
+                    }
+                } catch (err) {
+                    showAlertModal("Erro", "Não foi possível ler o arquivo JSON.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // --- Custom Modals Helpers ---
+        function showAlertModal(title, msg) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = msg;
+            document.getElementById('modal-btn-cancel').classList.add('hidden');
+            const confirmBtn = document.getElementById('modal-btn-confirm');
+            confirmBtn.textContent = "OK";
+            confirmBtn.onclick = closeModal;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function showConfirmModal(title, msg, onConfirm) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = msg;
+            document.getElementById('modal-btn-cancel').classList.remove('hidden');
+            const confirmBtn = document.getElementById('modal-btn-confirm');
+            confirmBtn.textContent = "Confirmar";
+            confirmBtn.onclick = () => {
+                closeModal();
+                onConfirm();
+            };
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function showPromptModal(title, label, onSubmit) {
+            // For simple prompt, we can use custom modal content or reuse prompt. Let's make a quick prompt dialog.
+            const name = prompt(label);
+            if (name) onSubmit(name);
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function toggleSqlModal() {
+            const modal = document.getElementById('sql-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function copySqlCode() {
+            const codeText = document.querySelector('#sql-modal pre code').innerText;
+            const textArea = document.createElement("textarea");
+            textArea.value = codeText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Código SQL copiado para a área de transferência!");
+            } catch (err) {
+                showAlertModal("Erro", "Falha ao copiar código SQL.");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-5 right-5 z-50 bg-grion-card bg-grimoire-card grimoire-gold-border text-grimoire-gold px-4 py-2 rounded-lg text-xs font-cinzel shadow-xl animate-fade-in";
+            toast.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Initialize on load
+        window.onload = function () {
+            initApp();
+        };
+    </script>
+</body>
+
+</html>
